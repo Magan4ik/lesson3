@@ -1,0 +1,46 @@
+{% extends 'base/_base.html' %}
+
+{% block title %}
+  Register Page
+{% endblock title %}
+
+{% block content %}
+{% if mes %}
+<div class="alert alert-info" role="alert">
+  {{ mes }}
+</div>
+{% endif %}
+<div id="carouselExample" class="carousel slide">
+  <div class="carousel-inner">
+    {% for post in posts %}
+    <div class="carousel-item {% if forloop.counter == 1 %}active{% else %} {% endif %}">
+      <a href="{% url 'blog:detail' post.slug %}"><img src="{{ post.image_url }}" class="d-block w-100" style="height: 720px"></a>
+      <div class="container text-bg-secondary">
+        <div class="carousel-caption d-none d-md-block">
+            <div class="card text-light position-relative start-50 translate-middle-x" style="background-color: #212529">
+              <div class="card-body">
+                <h5 class="card-title">{{ post.title }}</h5>
+                <h6 class="card-subtitle mb-2 text-secondary">{{ post.category|capfirst }}</h6>
+                <h6 class="card-subtitle mb-2 text-secondary">{{ post.publish|timesince }}</h6>
+
+                <p class="card-text">{{ post.body|truncatewords:20 }}</p>
+              </div>
+            </div>
+
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  <button class="carousel-control-prev" type="button" data-bs-target="#carouselExample" data-bs-slide="prev">
+    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+    <span class="visually-hidden">Previous</span>
+  </button>
+  <button class="carousel-control-next" type="button" data-bs-target="#carouselExample" data-bs-slide="next">
+    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+    <span class="visually-hidden">Next</span>
+  </button>
+</div>
+
+
+{% endblock content %}
