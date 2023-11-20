@@ -1,0 +1,23 @@
+{% extends 'base/_base.html' %}
+{% load crispy_forms_filters %}
+
+{% block title %}
+  Activate Page
+{% endblock title %}
+
+{% block content %}
+
+  <div class="col-3">
+    <h2>Activate page</h2>
+    <p>Check {{ blured_email }}</p>
+
+    <form action="" method="post">
+      {% csrf_token %}
+      <label for="token_input" class="form-label">Enter your token here</label>
+      <input type="text" class="form-control" id="token_input" name="token" required>
+      <button type="submit" class="btn btn-info mt-3">Done</button>
+    </form>
+  </div>
+
+
+{% endblock content %}
