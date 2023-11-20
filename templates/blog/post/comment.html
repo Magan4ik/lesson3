@@ -1,0 +1,58 @@
+{% load blog_filters %}
+
+<div class="card mb-4" id="comment{{ comment.pk }}">
+  {% if request.user.is_superuser %}
+  <div class="card-header">
+    <div class="row justify-content-start">
+      <div class="col-1 me-4">
+        <form method="POST">
+          {% csrf_token %}
+          <input type="hidden" name="active" value="{{ comment.pk }}">
+          {% if comment.active %}
+            <button type="submit" class="btn btn-warning">Disable</button>
+          {% else %}
+            <button type="submit" class="btn btn-success">Enable</button>
+          {% endif %}
+        </form>
+      </div>
+      <div class="col-1 ms-3">
+        <form method="POST">
+          {% csrf_token %}
+          <input type="hidden" name="delete" value="{{ comment.pk }}">
+          <button type="submit" class="btn btn-danger">Delete</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+  <div class="card-body">
+    <p>{{ comment.body }}</p>
+
+    <div class="d-flex justify-content-between">
+      <div class="d-flex flex-row align-items-center">
+        <img src="{{ comment.author.profile.avatar }}" alt="avatar" width="25"
+          height="25" />
+        <p class="small mb-0 ms-2"><strong>{{ comment.author.username }}</strong> <small>{{ comment.created|timesince }}</small></p>
+      </div>
+      <div class="d-flex flex-row align-items-center">
+        <a href="{% url 'blog:add_commentlike' comment.pk %}" class="me-1">
+          {% if comment|liked_by:request.user %}
+            <i class="fa-solid fa-thumbs-up"></i>
+          {% else %}
+            <i class="fa-regular fa-thumbs-up"></i>
+          {% endif %}
+        </a>
+        <p class="small text-muted mb-0">{{ comment.likes.all|length }}</p>
+
+        <a href="{% url 'blog:add_commentdislike' comment.pk %}" class="ms-2 me-1">
+          {% if comment|disliked_by:request.user %}
+            <i class="fa-solid fa-thumbs-down"></i>
+          {% else %}
+            <i class="fa-regular fa-thumbs-down"></i>
+          {% endif %}
+        </a>
+        <p class="small text-muted mb-0">{{ comment.dislikes.all|length }}</p>
+      </div>
+    </div>
+  </div>
+</div>
