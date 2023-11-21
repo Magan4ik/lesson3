@@ -14,6 +14,10 @@ User = get_user_model()
 @require_http_methods(["GET"])
 def post_list_view(request: HttpRequest) -> HttpResponse:
     mes = ""
+    if not (page := request.GET.get("page")):
+        page = 1
+    else:
+        page = int(page)
     if username := request.GET.get("username"):
         user = get_object_or_404(User, username=username)
         posts = models.Post.published.filter(author=user)
@@ -28,7 +32,7 @@ def post_list_view(request: HttpRequest) -> HttpResponse:
     else:
         posts = models.Post.published.all()
 
-    return render(request, "blog/post/post_list.html", {"posts": posts, "mes": mes})
+    return render(request, "blog/post/post_list.html", {"posts": posts[(page-1):(page+1)], "mes": mes, "page": page})
 
 @login_required
 @require_http_methods(["GET", "POST"])
