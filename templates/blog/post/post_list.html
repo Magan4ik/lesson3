@@ -46,21 +46,23 @@
 
 <nav aria-label="Page navigation example">
   <ul class="pagination justify-content-center">
+    {% if page > 1 %}
     <li class="page-item">
-      <a class="page-link" href="{{ request.url }}?page={{ page|add:-1 }}">Previous</a>
+      <a class="page-link" href="{{ request.url }}?page={{ page|add:-1 }}{{ filters }}">Previous</a>
     </li>
+    {% endif %}
     {% if page > 2 %}
-    <li class="page-item"><a class="page-link" href="{{ request.url }}?page={{ page|add:-2 }}">{{ page|add:-2 }}</a></li>
+    <li class="page-item"><a class="page-link" href="{{ request.url }}?page={{ page|add:-2 }}{{ filters }}">{{ page|add:-2 }}</a></li>
     {% endif %}
     {% if page > 1 %}
-    <li class="page-item"><a class="page-link" href="{{ request.url }}?page={{ page|add:-1 }}">{{ page|add:-1 }}</a></li>
+    <li class="page-item"><a class="page-link" href="{{ request.url }}?page={{ page|add:-1 }}{{ filters }}">{{ page|add:-1 }}</a></li>
     {% endif %}
-    <li class="page-item"><a class="page-link" href="{{ request.url }}?page={{ page }}">{{ page }}</a></li>
-    <li class="page-item"><a class="page-link" href="{{ request.url }}?page={{ page|add:1 }}">{{ page|add:1 }}</a></li>
-    <li class="page-item"><a class="page-link" href="{{ request.url }}?page={{ page|add:2 }}">{{ page|add:2 }}</a></li>
+    <li class="page-item"><a class="page-link" href="{{ request.url }}?page={{ page }}{{ filters }}">{{ page }}</a></li>
+    <li class="page-item"><a class="page-link" href="{{ request.url }}?page={{ page|add:1 }}{{ filters }}">{{ page|add:1 }}</a></li>
+    <li class="page-item"><a class="page-link" href="{{ request.url }}?page={{ page|add:2 }}{{ filters }}">{{ page|add:2 }}</a></li>
 
     <li class="page-item">
-      <a class="page-link" href="{{ request.url }}?page={{ page|add:1 }}">Next</a>
+      <a class="page-link" href="{{ request.url }}?page={{ page|add:1 }}{{ filters }}">Next</a>
     </li>
   </ul>
 </nav>
