@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     # user apps
     'accounts.apps.AccountsConfig',
     'blog.apps.BlogConfig'
+    'weather.apps.WeatherConfig'
 ]
 
 MIDDLEWARE = [
