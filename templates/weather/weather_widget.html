@@ -1,0 +1,54 @@
+{% extends 'base/_base.html' %}
+
+{% block title %}
+  Weather
+{% endblock title %}
+
+{% block content %}
+
+<div class="d-flex justify-content-center">
+  <div class="card rounded" style="width: 400px; height=400px">
+    <div class="card-body pt-0">
+      <div class="row">
+        <div class="col align-self-center text-start">
+          <strong class="text-secondary">{{ weather.name }}</strong>
+        </div>
+        <div class="col text-end">
+          <strong class="text-secondary">{{ weather.time_string }}</strong>
+          <img src="{{ weather.icon_url }}">
+        </div>
+      </div>
+      <div class="row">
+        <div class="col align-self-center text-center">
+          <p class="display-6 fw-normal">{{ weather.temp }} C°</p>
+          <p class="small text-muted">{{ weather.weather }}</p>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col align-self-center text-start text-muted">
+          <i class="fa-solid fa-wind"></i>
+          <strong>{{ weather.wind_speed_kh }} <small>km/h</small></strong>
+          <br>
+          <i class="fa-regular fa-compass"></i>
+          <strong>{{ weather.wind_diraction }}</strong>
+          <br>
+          <i class="fa-solid fa-droplet"></i>
+          <strong>{{ weather.humidity }} <small>%</small></strong>
+        </div>
+        <div class="col text-end text-muted">
+          <small>feels like:</small>
+          <strong class="mt-0">{{ weather.feel_temp }} C°</strong>
+          <br>
+          <small>min temp:</small>
+          <strong class="mt-0">{{ weather.min_temp }} C°</strong>
+          <br>
+          <small>max temp:</small>
+          <strong class="mt-0">{{ weather.max_temp }} C°</strong>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock content %}
