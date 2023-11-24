@@ -1,0 +1,24 @@
+{% extends 'base/_base.html' %}
+{% load crispy_forms_filters %}
+
+{% block title %}
+  Verify email
+{% endblock title %}
+
+{% block content %}
+
+  <div class="col-3">
+    <h2>Verify email</h2>
+
+    <form action="" method="post">
+      {% csrf_token %}
+      <label for="email" class="form-text">Email*</label>
+      <input type="email" class="form-control mb-1" placeholder="Enter your email" name="email" id="email" required>
+      <p class="small text-muted mb-1"><small>We'll send a token to your email to make sure it's really you.</small></p>
+      <p class="small text-muted"><strong>Attention!</strong> Your account will become inaccessible until you enter the received token</p>
+      <button type="submit" class="btn btn-info">Send</button>
+    </form>
+  </div>
+
+
+{% endblock content %}
