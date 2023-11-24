@@ -1,17 +1,25 @@
 {% extends 'base/_base.html' %}
+{% load weather_filters %}
 
 {% block title %}
   Weather
 {% endblock title %}
 
 {% block content %}
-
 <div class="d-flex justify-content-center">
-  <div class="card rounded" style="width: 400px; height=400px">
+  <div class="card rounded" style="width: 600px">
     <div class="card-body pt-0">
       <div class="row">
         <div class="col align-self-center text-start">
-          <strong class="text-secondary">{{ weather.name }}</strong>
+          <a href="{% url 'weather:city_follow' weather.city weather.id %}" class="text-warning text-decoration-none">
+            {% if user|follow_city:weather.id %}
+            <i class="fa-solid fa-star"></i>
+            {% else %}
+            <i class="fa-regular fa-star"></i>
+            {% endif %}
+          </a>
+          <strong class="text-secondary">{{ weather.city }}</strong>
+          <img src="https://ip-api.io/images/flags/{{ weather.country|lower }}.svg" class="rounded" height="25">
         </div>
         <div class="col text-end">
           <strong class="text-secondary">{{ weather.time_string }}</strong>
@@ -20,10 +28,67 @@
       </div>
       <div class="row">
         <div class="col align-self-center text-center">
-          <p class="display-6 fw-normal">{{ weather.temp }} C°</p>
-          <p class="small text-muted">{{ weather.weather }}</p>
+
+          <p>
+            <small class="text-muted">{{ weather.min_temp }} C°</small>
+            <span class="display-6 fw-normal ms-2 me-2">{{ weather.temp }} C°</span>
+            <small class="text-muted">{{ weather.max_temp }} C°</small>
+          </p>
+
+          <p class="text-muted">{{ weather.weather_description }}</p>
         </div>
       </div>
+      <!--  FORECAST ROWS  -->
+      <div class="row">
+        <div class="col text-muted">
+          <p class="small mb-0">forecast</p>
+        </div>
+        {% for data in forecast %}
+        <div class="col text-center text-muted">
+          <p class="small mb-0">{{ data.time_string }}</p>
+        </div>
+        {% endfor %}
+      </div>
+
+      <hr class="mt-0 mb-0">
+
+      <div class="row">
+        <div class="col text-muted">
+          <p class="small mb-0">max</p>
+        </div>
+        {% for data in forecast %}
+        <div class="col text-center text-muted">
+          <p class="small fw-normal mb-0">{{ data.max_temp }} C°</p>
+        </div>
+        {% endfor %}
+      </div>
+
+      <hr class="mt-0 mb-0">
+
+      <div class="row">
+        <div class="col text-muted">
+          <p class="small mb-0">min</p>
+        </div>
+        {% for data in forecast %}
+        <div class="col text-center text-muted">
+          <p class="small fw-normal mb-0">{{ data.min_temp }} C°</p>
+        </div>
+        {% endfor %}
+      </div>
+
+      <hr class="mt-0 mb-0">
+
+      <div class="row">
+        <div class="col text-muted">
+          <p class="small mb-0">weather</p>
+        </div>
+        {% for data in forecast %}
+        <div class="col text-center text-muted">
+          <img src="{{ data.icon_url }}" class="mb-3" width="25" height="25">
+        </div>
+        {% endfor %}
+      </div>
+      <!--  FINISH FORECAST  -->
       <div class="row">
         <div class="col align-self-center text-start text-muted">
           <i class="fa-solid fa-wind"></i>
@@ -51,4 +116,5 @@
     </div>
   </div>
 </div>
+
 {% endblock content %}
