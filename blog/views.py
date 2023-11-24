@@ -4,6 +4,7 @@ from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_http_methods
 from django.contrib import messages
+from django.urls import reverse
 
 from blog import models
 
@@ -20,6 +21,7 @@ def post_list_view(request: HttpRequest) -> HttpResponse:
         page = 1
     else:
         page = int(page[0])
+    list_page = page*2 - 1  # Page for [:]
     if username := request.GET.get("username"):
         user = get_object_or_404(User, username=username)
         posts = models.Post.published.filter(author=user)
@@ -31,11 +33,18 @@ def post_list_view(request: HttpRequest) -> HttpResponse:
         category = get_object_or_404(models.Category, pk=int(category_id))
         posts = models.Post.published.filter(category=category)
         mes = f"Posts in the \"{category.name}\" category"
+    elif search := request.GET.get("search"):
+        post_list = models.Post.published.all()
+        posts = list()
+        for post in post_list:
+            if search.lower() in post.title.lower() or search.lower() in post.body.lower():
+                posts.append(post)
+        mes = f"Posts by search \"{search}\""
     else:
         posts = models.Post.published.all()
 
     filters = '&' + get_data.urlencode()
-    posts = posts[(page-1):(page+1)]
+    posts = posts[(list_page-1):(list_page+1)]
     context = {"posts": posts,
                "mes": mes,
                "page": page,
