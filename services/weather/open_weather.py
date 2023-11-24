@@ -1,53 +1,44 @@
 import requests
 import datetime
 
-from services.weather import get_data
+from services.weather import config
 
 
 class WeatherData:
-    def __init__(self, lat: float, lon: float, units: str = "metric", lang: str = "en"):
-        appid = get_data.get_openweather_appid()
-        connect_timeout = get_data.const["CONNECT_TIMEOUT"]
-        read_timeout = get_data.const["READ_TIMEOUT"]
-        try:
-            res = requests.get("https://api.openweathermap.org/data/2.5/weather",
-                               params={"lat": lat, "lon": lon, "appid": appid, "units": units, "lang": lang},
-                               timeout=(connect_timeout, read_timeout))
-
-            self.full_data: dict = res.json()
-        except Exception as exp:
-            raise ValueError(exp)
-
-        self.name: str = self.full_data["name"]
-        self.country: str = self.full_data["sys"]["country"]
+    def __init__(self, full_data: dict, city: str, country: str, timezone: int, city_id: int):
+        self.full_data = full_data
+        
+        self.city = city
+        self.country = country
+        self.id = city_id
 
         weather = self.full_data["weather"][0]
         self.weather: str = weather["main"]
         self.weather_description: str = weather["description"]
 
         main = self.full_data["main"]
-        self.temp: float = main["temp"]
-        self.feel_temp: float = main["feels_like"]
-        self.min_temp: float = main["temp_min"]
-        self.max_temp: float = main["temp_max"]
+        self.temp: float = round(main["temp"], 1)
+        self.feel_temp: float = round(main["feels_like"], 1)
+        self.min_temp: float = round(main["temp_min"], 1)
+        self.max_temp: float = round(main["temp_max"], 1)
         self.sea_pressure: int = main.get("sea_level", -1)
         self.grnd_pressure: int = main.get("grnd_level", -1)
         self.humidity: int = main["humidity"]
 
         wind = self.full_data["wind"]
         self.wind_speed: float = wind["speed"]
-        self.wind_speed_kh: float = self.wind_speed * 3600 / 1000
+        self.wind_speed_kh: float = round(self.wind_speed * 3600 / 1000, 1)
         deg = wind["deg"]
         east_degs = list(range(338, 361))
         east_degs.extend(list(range(0, 23)))
         convert_deg = {"East": east_degs,
-                       "Northeast": list(range(23, 68)),
-                       "North": list(range(68, 113)),
-                       "Northwest": list(range(113, 158)),
-                       "West": list(range(158, 203)),
-                       "Southwest": list(range(203, 248)),
-                       "South": list(range(248, 293)),
-                       "Southeast": list(range(293, 338))}
+                       "Northeast": range(23, 68),
+                       "North": range(68, 113),
+                       "Northwest": range(113, 158),
+                       "West": range(158, 203),
+                       "Southwest": range(203, 248),
+                       "South": range(248, 293),
+                       "Southeast": range(293, 338)}
 
         for diraction, degs in convert_deg.items():
             if deg in degs:
@@ -59,8 +50,16 @@ class WeatherData:
         self.icon_url: str = f"https://openweathermap.org/img/wn/{weather['icon']}@2x.png"
 
         self.date_time = datetime.datetime.utcfromtimestamp(self.full_data["dt"])
-        self.timezone: int = self.full_data["timezone"] // 3600
-        self.time_string: str = f"{self.date_time.hour + self.timezone}:{self.date_time.minute}"
+        self.timezone: int = timezone // 3600
+        hour = self.date_time.hour + self.timezone
+        if hour >= 24:
+            hour -= 24
+        minute = self.date_time.minute
+        if hour < 10:
+            hour = "0" + str(hour)
+        if minute < 10:
+            minute = "0" + str(minute)
+        self.time_string: str = f"{hour}:{minute}"
 
     def get_full_data(self) -> dict:
         return self.full_data
