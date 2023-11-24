@@ -45,7 +45,7 @@ class ProfileForm(ModelForm):
         choices=Profile.GENDER_CHOICES
     )
     date_of_birth = forms.DateField(
-        widget=forms.SelectDateWidget(years=YEARS)
+        widget=forms.DateInput(attrs={"type": "date"})
     )
     info = forms.CharField()
 
