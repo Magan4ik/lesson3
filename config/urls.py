@@ -16,11 +16,13 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from config import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls', namespace='accounts')),
     path('blog/', include('blog.urls', namespace='blog')),
     path('weather/', include('weather.urls', namespace='weather')),
+    path('search', views.search_view, name='search'),
 
 ]
