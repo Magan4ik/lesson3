@@ -9,9 +9,15 @@
         <li><a href="{% url 'accounts:test' %}" class="nav-link px-2 text-white">Home</a></li>
         <li><a href="{% url 'blog:post_list' %}" class="nav-link px-2 text-white">Blogs</a></li>
         <li><a href="{% url 'accounts:profile' request.user %}" class="nav-link px-2 text-white">Profile</a></li>
-        <li><a href="{% url 'weather:weather_widget' %}" class="nav-link px-2 text-white">Weather</a></li>
-
-      </ul>
+        <div class="btn-group dropdown-center">
+          <a href="{% url 'weather:weather_widget' %}" class="nav-link px-2 text-white">Weather</a>
+          <button type="button" class="btn btn-dark dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+            <span class="visually-hidden">Toggle Dropdown</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-dark">
+            <li><a class="dropdown-item" href="{% url 'weather:city_list' %}">Cities</a></li>
+          </ul>
+        </div>
 
       <form class="col-12 col-lg-auto mb-3 mb-lg-0 me-lg-3">
         <input type="search" class="form-control form-control-dark" placeholder="Search..." aria-label="Search">
