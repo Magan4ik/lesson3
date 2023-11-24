@@ -1,0 +1,37 @@
+{% extends 'base/_base.html' %}
+{% load weather_filters %}
+
+{% block title %}
+  Search
+{% endblock title %}
+
+{% block content %}
+<h3>{{ city_name }}</h3>
+{% for city in cities %}
+  <div class="card mb-1">
+    <div class="card-body pt-0 pb-0 pe-0">
+      <div class="row">
+        <div class="col text-start align-self-center">
+          <a href="{% url 'weather:city_follow' city.city city.id %}" class="text-warning text-decoration-none">
+            {% if user|follow_city:city.id %}
+            <i class="fa-solid fa-star"></i>
+            {% else %}
+            <i class="fa-regular fa-star"></i>
+            {% endif %}
+          </a>
+          <a href="{% url 'weather:weather_detail' city.id %}" class="text-decoration-none text-muted">
+            {{ city.city }}
+          </a>
+        </div>
+        <div class="col text-end align-self-center">
+          {{ city.temp }} C°
+          <img src="{{ city.icon_url }}" width="50" height="50">
+          <img src="https://ip-api.io/images/flags/{{ city.country|lower }}.svg" class="rounded-end" height="50">
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+{% endfor %}
+{% endblock content %}
