@@ -66,8 +66,11 @@ class WeatherData:
 
 
 class WeatherInterface:
+    _appid = config.get_openweather_appid()
+    connect_timeout = config.const["CONNECT_TIMEOUT"]
+    read_timeout = config.const["READ_TIMEOUT"]
+
     def __init__(self, city_name: str, state_code: str = None, country_code: str = None):
-        self._appid = get_data.get_openweather_appid()
         if state_code:
             city_name += ',' + state_code
         if country_code:
@@ -75,25 +78,102 @@ class WeatherInterface:
 
         try:
             res = requests.get("http://api.openweathermap.org/geo/1.0/direct",
-                               params={'q': city_name, 'appid': self._appid, 'limit': 5})
+                               params={'q': city_name, 'appid': self._appid, 'limit': 5},
+                               timeout=(self.connect_timeout, self.read_timeout))
 
             self.data = res.json()
         except Exception as exp:
             raise ValueError(exp)
 
-    def get_city_list(self) -> list:
-        city_list = []
-        for d in self.data:
-            city_list.append(f'{0},{1}'.format(d['name'], d['country']))
-        return city_list
+    def get_city_list(self, string: bool = True) -> list:
+        if string:
+            city_list = []
+            for d in self.data:
+                city_list.append(f'{0},{1}'.format(d['name'], d['country']))
+            return city_list
+        else:
+            return self.data
 
-    def get_weather_byindex(self, index: int = 0, units: str = "metric", lang: str = "en") -> WeatherData:
+    def get_coords_byindex(self, index: int = 0) -> tuple[float, float]:
         if index >= len(self.data):
             raise IndexError(f"No such index exists. Max:{len(self.data)-1}")
-        city = self.data[index]  # get first city data in dict
-        lat = city["lat"]
-        lon = city["lon"]
-        return WeatherData(lat, lon, units=units, lang=lang)
+        city = self.data[index]  # get index city data in dict
+        lat: float = city["lat"]
+        lon: float = city["lon"]
+        return lat, lon
+
+    def get_weather_byindex(self, index: int = 0, units: str = "metric", lang: str = "en") -> WeatherData:
+        lat, lon = self.get_coords_byindex(index)
+        try:
+            res = requests.get("https://api.openweathermap.org/data/2.5/weather",
+                               params={"lat": lat, "lon": lon, "appid": self._appid, "units": units, "lang": lang},
+                               timeout=(self.connect_timeout, self.read_timeout))
+
+            full_data: dict = res.json()
+            city = full_data['name']
+            country = full_data['sys']['country']
+            timezone = full_data['timezone']
+            city_id = full_data['id']
+            return WeatherData(full_data, city, country, timezone, city_id)
+        except Exception as exp:
+            raise ValueError(exp)
+
+    def get_forecast_byindex(self, index: int = 0, cnt: int = 5, units: str = "metric", lang: str = "en") -> list[WeatherData]:
+        lat, lon = self.get_coords_byindex(index)
+        try:
+            res = requests.get("https://api.openweathermap.org/data/2.5/forecast",
+                               params={"lat": lat, "lon": lon, "appid": self._appid, "cnt": cnt, "units": units, "lang": lang},
+                               timeout=(self.connect_timeout, self.read_timeout))
+
+            full_data: dict = res.json()
+            city = full_data['city']['name']
+            country = full_data['city']['country']
+            timezone = full_data['city']['timezone']
+            city_id = full_data['city']['id']
+            forecast: list = full_data['list']
+            forecast_data = list()
+            for data in forecast:
+                forecast_data.append(WeatherData(data, city, country, timezone, city_id))
+            return forecast_data
+        except Exception as exp:
+            raise ValueError(exp)
 
     def get_first_weather(self, units: str = "metric", lang: str = "en") -> WeatherData:
         return self.get_weather_byindex(index=0, units=units, lang=lang)
+
+    def get_first_forecast(self, cnt: int = 5, units: str = "metric", lang: str = "en") -> list[WeatherData]:
+        return self.get_forecast_byindex(0, cnt=cnt, units=units, lang=lang)
+
+    @classmethod
+    def get_weather_byid(cls, city_id: int, units: str = "metric", lang: str = "en") -> WeatherData:
+        try:
+            res = requests.get("https://api.openweathermap.org/data/2.5/weather",
+                               params={"id": city_id, "appid": cls._appid, "units": units, "lang": lang},
+                               timeout=(cls.connect_timeout, cls.read_timeout))
+
+            full_data: dict = res.json()
+            city = full_data['name']
+            country = full_data['sys']['country']
+            timezone = full_data['timezone']
+            return WeatherData(full_data, city, country, timezone, city_id)
+        except Exception as exp:
+            raise ValueError(exp)
+
+    @classmethod
+    def get_forecast_byid(cls, city_id: int, cnt: int = 5, units: str = "metric", lang: str = "en") -> list[WeatherData]:
+        try:
+            res = requests.get("https://api.openweathermap.org/data/2.5/forecast",
+                               params={"id": city_id, "appid": cls._appid, "cnt": cnt, "units": units, "lang": lang},
+                               timeout=(cls.connect_timeout, cls.read_timeout))
+
+            full_data: dict = res.json()
+            city = full_data['city']['name']
+            country = full_data['city']['country']
+            timezone = full_data['city']['timezone']
+            forecast: list = full_data['list']
+            forecast_data = list()
+            for data in forecast:
+                forecast_data.append(WeatherData(data, city, country, timezone, city_id))
+            return forecast_data
+        except Exception as exp:
+            raise ValueError(exp)
