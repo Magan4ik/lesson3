@@ -38,10 +38,12 @@ def login_view(request: HttpRequest) -> HttpResponse:
 
             if user:
                 login(request, user)
+                if request.GET.get("next"):
+                    return redirect(request.GET.get("next"))
                 return redirect('accounts:test')
             else:
                 messages.error(request, 'Invalid email or password')
-                return redirect('accounts:login')
+                return render(request, 'accounts/login.html', {'form': form})
         else:
             messages.error(request, 'Invalid form data')
             return render(request, 'accounts/login.html', {'form': form})
@@ -137,3 +139,52 @@ def follow_view(request: HttpRequest, username: str) -> HttpResponse:
         follow.delete()
     url = reverse("accounts:profile", args=[username])
     return redirect("accounts:profile", username=username)
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def edit_profile_view(request: HttpRequest, username: str) -> HttpResponse:
+    user = get_object_or_404(User, username=username)
+    profile = get_object_or_404(models.Profile, user=user)
+    if request.user == user or request.user.is_superuser:
+        if request.method == 'POST':
+            form = forms.ProfileForm(instance=profile, data=request.POST)
+            if form.is_valid():
+                form.save()
+                messages.success(request, "The profile has been successfully updated")
+                return redirect("accounts:profile", username=username)
+            else:
+                return render(request, "accounts/edit_profile.html", {'form': form, "username": username})
+    else:
+        messages.warning(request, "You don't have permission to edit this profile.")
+        return redirect("accounts:profile", username=username)
+
+    form = forms.ProfileForm(instance=profile)
+    return render(request, "accounts/edit_profile.html", {"form": form, "username": username})
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def change_password_view(request: HttpRequest, username: str) -> HttpResponse:
+    if request.user.username != username:
+        messages.warning(request, "You don't have permission to change this password.")
+        return redirect("accounts:profile", username=username)
+    if request.method == "POST":
+        form = forms.PasswordChangeForm(user=request.user, data=request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Your password has been successfully changed")
+            return redirect("accounts:profile", username=username)
+        else:
+            return render(request, "accounts/change_password.html", {'form': form})
+
+    form = forms.PasswordChangeForm(request.user)
+    return render(request, "accounts/change_password.html", {"form": form})
+
+@require_http_methods(["GET","POST"])
+def verify_email_view(request: HttpRequest) -> HttpResponse:
+    if request.method == "POST":
+        user = get_object_or_404(User, email=request.POST.get("email"))
+        user.is_active = False
+        user.save()
+        send_activation_email(user)
+        return redirect("accounts:activate_token")
+    return render(request, "accounts/verify_email.html")
