@@ -19,8 +19,20 @@
           </ul>
         </div>
 
-      <form class="col-12 col-lg-auto mb-3 mb-lg-0 me-lg-3">
-        <input type="search" class="form-control form-control-dark" placeholder="Search..." aria-label="Search">
+      </ul>
+
+      <form class="col-12 col-lg-auto mb-3 mb-lg-0 me-lg-3" method="GET" action="{% url 'search' %}">
+        <div class="row gx-0">
+          <div class="col-8">
+            <input type="search" class="form-control form-control-dark rounded-0 rounded-start" placeholder="Search..." name="search">
+          </div>
+          <div class="col-4">
+            <select class="form-select rounded-0 rounded-end" name="option">
+              <option value="posts" selected>Posts</option>
+              <option value="weather">Cities</option>
+            </select>
+          </div>
+        </div>
       </form>
 
       <div class="text-end">
