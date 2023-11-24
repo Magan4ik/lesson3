@@ -20,10 +20,10 @@
                 alt="Profile avatar" class="img-fluid img-thumbnail mt-4 mb-2"
                 style="width: 150px; z-index: 1">
               {% if request.user == profile.user %}
-              <button type="button" class="btn btn-outline-dark" data-mdb-ripple-color="dark"
+              <a href="{% url 'accounts:edit_profile' user.username %}" type="button" class="btn btn-outline-dark" data-mdb-ripple-color="dark"
                 style="z-index: 1;">
                 Edit profile
-              </button>
+              </a>
               {% else %}
               <a href="{% url 'accounts:follow' profile.user %}" type="button" class="btn btn-outline-dark" data-mdb-ripple-color="dark"
                 style="z-index: 1;">
