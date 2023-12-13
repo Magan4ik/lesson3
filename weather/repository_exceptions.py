@@ -1,0 +1,2 @@
+class CountryNotFound(BaseException):
+    pass

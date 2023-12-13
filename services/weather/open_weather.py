@@ -1,179 +1,199 @@
 import requests
 import datetime
 
-from services.weather import config
+from services import services_config
+from services.service_interfaces import WeatherTodayInterface, WeatherForecastInterface
+from services.weather.exceptions import ServerInvalidResponseError, CityNotFoundError, ServerReturnInvalidStatusCode
+from services.weather.weather_dto import WeatherDTO, WeatherCityDTO, CoordinatesDTO, TemperatureDTO, TimeDTO
 
 
-class WeatherData:
-    def __init__(self, full_data: dict, city: str, country: str, timezone: int, city_id: int):
-        self.full_data = full_data
-        
-        self.city = city
-        self.country = country
-        self.id = city_id
+def degrees_to_wind_direction(degrees: int) -> str:
+    directions = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"]
 
-        weather = self.full_data["weather"][0]
-        self.weather: str = weather["main"]
-        self.weather_description: str = weather["description"]
-
-        main = self.full_data["main"]
-        self.temp: float = round(main["temp"], 1)
-        self.feel_temp: float = round(main["feels_like"], 1)
-        self.min_temp: float = round(main["temp_min"], 1)
-        self.max_temp: float = round(main["temp_max"], 1)
-        self.sea_pressure: int = main.get("sea_level", -1)
-        self.grnd_pressure: int = main.get("grnd_level", -1)
-        self.humidity: int = main["humidity"]
-
-        wind = self.full_data["wind"]
-        self.wind_speed: float = wind["speed"]
-        self.wind_speed_kh: float = round(self.wind_speed * 3600 / 1000, 1)
-        deg = wind["deg"]
-        east_degs = list(range(338, 361))
-        east_degs.extend(list(range(0, 23)))
-        convert_deg = {"East": east_degs,
-                       "Northeast": range(23, 68),
-                       "North": range(68, 113),
-                       "Northwest": range(113, 158),
-                       "West": range(158, 203),
-                       "Southwest": range(203, 248),
-                       "South": range(248, 293),
-                       "Southeast": range(293, 338)}
-
-        for diraction, degs in convert_deg.items():
-            if deg in degs:
-                self.wind_diraction: str = diraction
-                break
-        else:
-            self.wind_diraction: str = "NaN"
-
-        self.icon_url: str = f"https://openweathermap.org/img/wn/{weather['icon']}@2x.png"
-
-        self.date_time = datetime.datetime.utcfromtimestamp(self.full_data["dt"])
-        self.timezone: int = timezone // 3600
-        hour = self.date_time.hour + self.timezone
-        if hour >= 24:
-            hour -= 24
-        minute = self.date_time.minute
-        if hour < 10:
-            hour = "0" + str(hour)
-        if minute < 10:
-            minute = "0" + str(minute)
-        self.time_string: str = f"{hour}:{minute}"
-
-    def get_full_data(self) -> dict:
-        return self.full_data
+    # Перевод угла в направление
+    index = round(degrees / (360. / len(directions))) % len(directions)
+    return directions[index]
 
 
-class WeatherInterface:
-    _appid = config.get_openweather_appid()
-    connect_timeout = config.const["CONNECT_TIMEOUT"]
-    read_timeout = config.const["READ_TIMEOUT"]
-
-    def __init__(self, city_name: str, state_code: str = None, country_code: str = None):
-        if state_code:
-            city_name += ',' + state_code
-        if country_code:
-            city_name += ',' + country_code
-
-        try:
-            res = requests.get("http://api.openweathermap.org/geo/1.0/direct",
-                               params={'q': city_name, 'appid': self._appid, 'limit': 5},
-                               timeout=(self.connect_timeout, self.read_timeout))
-
-            self.data = res.json()
-        except Exception as exp:
-            raise ValueError(exp)
-
-    def get_city_list(self, string: bool = True) -> list:
-        if string:
-            city_list = []
-            for d in self.data:
-                city_list.append(f'{0},{1}'.format(d['name'], d['country']))
-            return city_list
-        else:
-            return self.data
-
-    def get_coords_byindex(self, index: int = 0) -> tuple[float, float]:
-        if index >= len(self.data):
-            raise IndexError(f"No such index exists. Max:{len(self.data)-1}")
-        city = self.data[index]  # get index city data in dict
-        lat: float = city["lat"]
-        lon: float = city["lon"]
-        return lat, lon
-
-    def get_weather_byindex(self, index: int = 0, units: str = "metric", lang: str = "en") -> WeatherData:
-        lat, lon = self.get_coords_byindex(index)
-        try:
-            res = requests.get("https://api.openweathermap.org/data/2.5/weather",
-                               params={"lat": lat, "lon": lon, "appid": self._appid, "units": units, "lang": lang},
-                               timeout=(self.connect_timeout, self.read_timeout))
-
-            full_data: dict = res.json()
-            city = full_data['name']
-            country = full_data['sys']['country']
-            timezone = full_data['timezone']
-            city_id = full_data['id']
-            return WeatherData(full_data, city, country, timezone, city_id)
-        except Exception as exp:
-            raise ValueError(exp)
-
-    def get_forecast_byindex(self, index: int = 0, cnt: int = 5, units: str = "metric", lang: str = "en") -> list[WeatherData]:
-        lat, lon = self.get_coords_byindex(index)
-        try:
-            res = requests.get("https://api.openweathermap.org/data/2.5/forecast",
-                               params={"lat": lat, "lon": lon, "appid": self._appid, "cnt": cnt, "units": units, "lang": lang},
-                               timeout=(self.connect_timeout, self.read_timeout))
-
-            full_data: dict = res.json()
-            city = full_data['city']['name']
-            country = full_data['city']['country']
-            timezone = full_data['city']['timezone']
-            city_id = full_data['city']['id']
-            forecast: list = full_data['list']
-            forecast_data = list()
-            for data in forecast:
-                forecast_data.append(WeatherData(data, city, country, timezone, city_id))
-            return forecast_data
-        except Exception as exp:
-            raise ValueError(exp)
-
-    def get_first_weather(self, units: str = "metric", lang: str = "en") -> WeatherData:
-        return self.get_weather_byindex(index=0, units=units, lang=lang)
-
-    def get_first_forecast(self, cnt: int = 5, units: str = "metric", lang: str = "en") -> list[WeatherData]:
-        return self.get_forecast_byindex(0, cnt=cnt, units=units, lang=lang)
+class OpenWeatherTodayService(WeatherTodayInterface):
+    _appid = services_config.get_openweather_appid()
+    current_weather_url = "https://api.openweathermap.org/data/2.5/weather"
 
     @classmethod
-    def get_weather_byid(cls, city_id: int, units: str = "metric", lang: str = "en") -> WeatherData:
-        try:
-            res = requests.get("https://api.openweathermap.org/data/2.5/weather",
-                               params={"id": city_id, "appid": cls._appid, "units": units, "lang": lang},
-                               timeout=(cls.connect_timeout, cls.read_timeout))
-
-            full_data: dict = res.json()
-            city = full_data['name']
-            country = full_data['sys']['country']
-            timezone = full_data['timezone']
-            return WeatherData(full_data, city, country, timezone, city_id)
-        except Exception as exp:
-            raise ValueError(exp)
+    def get_weather(cls, city: str) -> WeatherDTO:
+        response = cls._get_weather_json_by_name(city=city)
+        status_code = int(response['cod'])
+        cls._validate_response_or_raise(response, status_code)
+        weather_dto = cls._parse_json_to_weather_dto(response)
+        return weather_dto
 
     @classmethod
-    def get_forecast_byid(cls, city_id: int, cnt: int = 5, units: str = "metric", lang: str = "en") -> list[WeatherData]:
-        try:
-            res = requests.get("https://api.openweathermap.org/data/2.5/forecast",
-                               params={"id": city_id, "appid": cls._appid, "cnt": cnt, "units": units, "lang": lang},
-                               timeout=(cls.connect_timeout, cls.read_timeout))
+    def get_weather_by_id(cls, city_id: int) -> WeatherDTO:
+        response = cls._get_weather_json_by_id(city_id=city_id)
+        status_code = int(response['cod'])
+        cls._validate_response_or_raise(response, status_code)
+        weather_dto = cls._parse_json_to_weather_dto(response)
+        return weather_dto
 
-            full_data: dict = res.json()
-            city = full_data['city']['name']
-            country = full_data['city']['country']
-            timezone = full_data['city']['timezone']
-            forecast: list = full_data['list']
-            forecast_data = list()
-            for data in forecast:
-                forecast_data.append(WeatherData(data, city, country, timezone, city_id))
-            return forecast_data
-        except Exception as exp:
-            raise ValueError(exp)
+    @classmethod
+    def _get_weather_json_by_name(cls, city: str, lang="en") -> dict:
+        response = requests.get(cls.current_weather_url,
+                                params={"q": city, "appid": cls._appid, "units": "metric", "lang": lang},
+                                timeout=(cls.connect_timeout, cls.read_timeout))
+        weather_json = response.json()
+        return weather_json
+
+    @classmethod
+    def _get_weather_json_by_id(cls, city_id: int, lang="en") -> dict:
+        response = requests.get(cls.current_weather_url,
+                                params={"id": city_id, "appid": cls._appid, "units": "metric", "lang": lang},
+                                timeout=(cls.connect_timeout, cls.read_timeout))
+        weather_json = response.json()
+        return weather_json
+
+    @staticmethod
+    def _parse_json_to_weather_dto(json_response: dict) -> WeatherDTO:
+        city = WeatherCityDTO(
+            name=json_response['name'],
+            country_code=json_response['sys']['country'],
+            coordinates=CoordinatesDTO(
+                lat=json_response['coord']['lat'],
+                lon=json_response['coord']['lon']
+            )
+        )
+        city_id = json_response['id']
+        weather = json_response['weather'][0]['main']
+        description = json_response['weather'][0]['description']
+        temperature = TemperatureDTO(
+            normal=json_response['main']['temp'],
+            feel=json_response['main']['feels_like'],
+            min=json_response['main']['temp_min'],
+            max=json_response['main']['temp_max']
+        )
+        humidity = json_response['main']['humidity']
+        wind_speed = int(json_response['wind']['speed'] * 3.6)
+        wind_direction = degrees_to_wind_direction(json_response['wind']['deg'])
+        icon_url = f"https://openweathermap.org/img/wn/{json_response['weather'][0]['icon']}@2x.png"
+        time = TimeDTO(
+            current=datetime.datetime.fromtimestamp(json_response['dt']).strftime('%H:%M'),
+            sunrise=datetime.datetime.utcfromtimestamp(
+                json_response['sys']['sunrise'] + json_response['timezone']).strftime('%H:%M'),
+            sunset=datetime.datetime.utcfromtimestamp(
+                json_response['sys']['sunset'] + json_response['timezone']).strftime('%H:%M')
+        )
+        weather_dto = WeatherDTO(
+            city=city,
+            city_id=city_id,
+            weather=weather,
+            description=description,
+            temperature=temperature,
+            humidity=humidity,
+            wind_speed=wind_speed,
+            wind_direction=wind_direction,
+            icon_url=icon_url,
+            time=time
+        )
+        return weather_dto
+
+    @staticmethod
+    def _validate_response_or_raise(response_json: dict, status_code: int):
+        if response_json is None:
+            raise ServerInvalidResponseError(f'OpenWeather internal server error, status code: {status_code}')
+
+        if status_code != 200:
+            if status_code == 404:
+                raise CityNotFoundError(response_json['message'].capitalize())
+            raise ServerReturnInvalidStatusCode(f'OpenWeather return invalid status code, status code: {status_code}')
+
+class OpenWeatherForecastService(WeatherForecastInterface):
+    _appid = services_config.get_openweather_appid()
+    forecast_weather_url = "https://api.openweathermap.org/data/2.5/forecast"
+
+    @classmethod
+    def get_weather(cls, city: str, cnt=5, lang="en") -> list[WeatherDTO]:
+        response = cls._get_forecast_json_by_name(city=city, cnt=cnt, lang=lang)
+        status_code = int(response['cod'])
+        cls._validate_response_or_raise(response, status_code)
+        forecast_list = cls._parse_forecast_json_to_weather_dto(response)
+        return forecast_list
+
+    @classmethod
+    def get_weather_by_id(cls, city_id: int, cnt=5, lang="en") -> list[WeatherDTO]:
+        response = cls._get_forecast_json_by_id(city_id=city_id, cnt=cnt, lang=lang)
+        status_code = int(response['cod'])
+        cls._validate_response_or_raise(response, status_code)
+        forecast_list = cls._parse_forecast_json_to_weather_dto(response)
+        return forecast_list
+
+    @classmethod
+    def _get_forecast_json_by_name(cls, city: str, cnt=5, lang="en") -> dict:
+        response = requests.get(cls.forecast_weather_url,
+                                params={"q": city, "appid": cls._appid, "units": "metric", "lang": lang, "cnt": cnt},
+                                timeout=(cls.connect_timeout, cls.read_timeout))
+        weather_json = response.json()
+        return weather_json
+
+    @classmethod
+    def _get_forecast_json_by_id(cls, city_id: int, cnt=5, lang="en") -> dict:
+        response = requests.get(cls.forecast_weather_url,
+                                params={"id": city_id, "appid": cls._appid, "units": "metric", "lang": lang, "cnt": cnt},
+                                timeout=(cls.connect_timeout, cls.read_timeout))
+        weather_json = response.json()
+        return weather_json
+
+    @staticmethod
+    def _parse_forecast_json_to_weather_dto(json_response: dict) -> list[WeatherDTO]:
+        forecast_list = list()
+        for data in json_response['list']:
+            city = WeatherCityDTO(
+                name=json_response['city']['name'],
+                country_code=json_response['city']['country'],
+                coordinates=CoordinatesDTO(
+                    lat=json_response['city']['coord']['lat'],
+                    lon=json_response['city']['coord']['lon']
+                )
+            )
+            city_id = json_response['city']['id']
+            weather = data['weather'][0]['main']
+            description = data['weather'][0]['description']
+            temperature = TemperatureDTO(
+                normal=data['main']['temp'],
+                feel=data['main']['feels_like'],
+                min=data['main']['temp_min'],
+                max=data['main']['temp_max']
+            )
+            humidity = data['main']['humidity']
+            wind_speed = int(data['wind']['speed'] * 3.6)
+            wind_direction = degrees_to_wind_direction(data['wind']['deg'])
+            icon_url = f"https://openweathermap.org/img/wn/{data['weather'][0]['icon']}@2x.png"
+            time = TimeDTO(
+                current=datetime.datetime.fromtimestamp(data['dt']).strftime('%H:%M'),
+                sunrise=datetime.datetime.utcfromtimestamp(
+                    json_response['city']['sunrise'] + json_response['city']['timezone']).strftime('%H:%M'),
+                sunset=datetime.datetime.utcfromtimestamp(
+                    json_response['city']['sunset'] + json_response['city']['timezone']).strftime('%H:%M')
+            )
+            weather_dto = WeatherDTO(
+                city=city,
+                city_id=city_id,
+                weather=weather,
+                description=description,
+                temperature=temperature,
+                humidity=humidity,
+                wind_speed=wind_speed,
+                wind_direction=wind_direction,
+                icon_url=icon_url,
+                time=time
+            )
+            forecast_list.append(weather_dto)
+        return forecast_list
+
+    @staticmethod
+    def _validate_response_or_raise(response_json: dict, status_code: int):
+        if response_json is None:
+            raise ServerInvalidResponseError(f'OpenWeather internal server error, status code: {status_code}')
+
+        if status_code != 200:
+            if status_code == 404:
+                raise CityNotFoundError(response_json['message'].capitalize())
+            raise ServerReturnInvalidStatusCode(f'OpenWeather return invalid status code, status code: {status_code}')

@@ -6,115 +6,137 @@
 {% endblock title %}
 
 {% block content %}
-<div class="d-flex justify-content-center">
-  <div class="card rounded" style="width: 600px">
-    <div class="card-body pt-0">
-      <div class="row">
-        <div class="col align-self-center text-start">
-          <a href="{% url 'weather:city_follow' weather.city weather.id %}" class="text-warning text-decoration-none">
-            {% if user|follow_city:weather.id %}
-            <i class="fa-solid fa-star"></i>
-            {% else %}
-            <i class="fa-regular fa-star"></i>
-            {% endif %}
-          </a>
-          <strong class="text-secondary">{{ weather.city }}</strong>
-          <img src="https://ip-api.io/images/flags/{{ weather.country|lower }}.svg" class="rounded" height="25">
-        </div>
-        <div class="col text-end">
-          <strong class="text-secondary">{{ weather.time_string }}</strong>
-          <img src="{{ weather.icon_url }}">
+<div class="row">
+  <div class="col">
+
+    <div class="d-flex justify-content-center">
+      <div class="card" style="width: 600px">
+        <div class="card-body pt-0">
+          <div class="row">
+            <div class="col align-self-center text-start">
+              <a href="{% url 'weather:city_follow' %}?city_name={{ city_info.name }}&country_code={{ city_info.country_code }}"
+                 class="text-warning text-decoration-none">
+                {% if user|follow_city:city_info.name %}
+                <i class="fa-solid fa-star"></i>
+                {% else %}
+                <i class="fa-regular fa-star"></i>
+                {% endif %}
+              </a>
+              <strong class="text-secondary">{{ city_info.name }}</strong>
+              <img src="https://ip-api.io/images/flags/{{ city_info.country_code|lower }}.svg" class="rounded" height="25">
+            </div>
+            <div class="col text-end">
+              <strong class="text-secondary">{{ city_info.weather_now.time.current }}</strong>
+              <img src="{{ city_info.weather_now.icon_url }}">
+            </div>
+          </div>
+          <div class="row">
+            <div class="col align-self-center text-center">
+
+              <p>
+                <small class="text-muted">{{ city_info.weather_now.temperature.min }} C°</small>
+                <span class="display-6 fw-normal ms-2 me-2">{{ city_info.weather_now.temperature.normal }} C°</span>
+                <small class="text-muted">{{ city_info.weather_now.temperature.max }} C°</small>
+              </p>
+
+              <p class="text-muted">{{ city_info.weather_now.description }}</p>
+            </div>
+          </div>
+          <!--  FORECAST ROWS  -->
+          <div class="row">
+            <div class="col text-muted">
+              <p class="small mb-0">forecast</p>
+            </div>
+            {% for data in city_info.weather_forecast %}
+            <div class="col text-center text-muted">
+              <p class="small mb-0">{{ data.time.current }}</p>
+            </div>
+            {% endfor %}
+          </div>
+
+          <hr class="mt-0 mb-0">
+
+          <div class="row">
+            <div class="col text-muted">
+              <p class="small mb-0">max</p>
+            </div>
+            {% for data in city_info.weather_forecast %}
+            <div class="col text-center text-muted">
+              <p class="small fw-normal mb-0">{{ data.temperature.max }} C°</p>
+            </div>
+            {% endfor %}
+          </div>
+
+          <hr class="mt-0 mb-0">
+
+          <div class="row">
+            <div class="col text-muted">
+              <p class="small mb-0">min</p>
+            </div>
+            {% for data in city_info.weather_forecast %}
+            <div class="col text-center text-muted">
+              <p class="small fw-normal mb-0">{{ data.temperature.min }} C°</p>
+            </div>
+            {% endfor %}
+          </div>
+
+          <hr class="mt-0 mb-0">
+
+          <div class="row">
+            <div class="col text-muted">
+              <p class="small mb-0">weather</p>
+            </div>
+            {% for data in city_info.weather_forecast %}
+            <div class="col text-center text-muted">
+              <img src="{{ data.icon_url }}" class="mb-3" width="25" height="25">
+            </div>
+            {% endfor %}
+          </div>
+          <!--  FINISH FORECAST  -->
+          <div class="row">
+            <div class="col align-self-center text-start text-muted">
+              <i class="fa-solid fa-wind"></i>
+              <strong>{{ city_info.weather_now.wind_speed }} <small>km/h</small></strong>
+              <br>
+              <i class="fa-regular fa-compass"></i>
+              <strong>{{ city_info.weather_now.wind_direction }}</strong>
+              <br>
+              <i class="fa-solid fa-droplet"></i>
+              <strong>{{ city_info.weather_now.humidity }} <small>%</small></strong>
+            </div>
+            <div class="col text-end text-muted">
+              <small>feels like:</small>
+              <strong class="mt-0">{{ city_info.weather_now.temperature.feel }} C°</strong>
+              <br>
+              <small>sunrise:</small>
+              <strong class="mt-0">{{ city_info.weather_now.time.sunrise }}</strong>
+              <br>
+              <small>sunset:</small>
+              <strong class="mt-0">{{ city_info.weather_now.time.sunset }}</strong>
+
+            </div>
+          </div>
+
         </div>
       </div>
-      <div class="row">
-        <div class="col align-self-center text-center">
-
-          <p>
-            <small class="text-muted">{{ weather.min_temp }} C°</small>
-            <span class="display-6 fw-normal ms-2 me-2">{{ weather.temp }} C°</span>
-            <small class="text-muted">{{ weather.max_temp }} C°</small>
-          </p>
-
-          <p class="text-muted">{{ weather.weather_description }}</p>
-        </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">{{ city_info.name }}</h2>
       </div>
-      <!--  FORECAST ROWS  -->
-      <div class="row">
-        <div class="col text-muted">
-          <p class="small mb-0">forecast</p>
-        </div>
-        {% for data in forecast %}
-        <div class="col text-center text-muted">
-          <p class="small mb-0">{{ data.time_string }}</p>
-        </div>
-        {% endfor %}
+      <div class="card-body">
+        {% if city_info.wiki_page %}
+          <img src="{{ city_info.image }}" class="w-100" alt="image not found">
+          {% autoescape off %}
+          {{ city_info.wiki_page }}
+          {% endautoescape %}
+        {% else %}
+          <h3 class="mt-5 text-center">Wiki info for {{ city_info.name }} does not exist</h3>
+        {% endif %}
       </div>
-
-      <hr class="mt-0 mb-0">
-
-      <div class="row">
-        <div class="col text-muted">
-          <p class="small mb-0">max</p>
-        </div>
-        {% for data in forecast %}
-        <div class="col text-center text-muted">
-          <p class="small fw-normal mb-0">{{ data.max_temp }} C°</p>
-        </div>
-        {% endfor %}
-      </div>
-
-      <hr class="mt-0 mb-0">
-
-      <div class="row">
-        <div class="col text-muted">
-          <p class="small mb-0">min</p>
-        </div>
-        {% for data in forecast %}
-        <div class="col text-center text-muted">
-          <p class="small fw-normal mb-0">{{ data.min_temp }} C°</p>
-        </div>
-        {% endfor %}
-      </div>
-
-      <hr class="mt-0 mb-0">
-
-      <div class="row">
-        <div class="col text-muted">
-          <p class="small mb-0">weather</p>
-        </div>
-        {% for data in forecast %}
-        <div class="col text-center text-muted">
-          <img src="{{ data.icon_url }}" class="mb-3" width="25" height="25">
-        </div>
-        {% endfor %}
-      </div>
-      <!--  FINISH FORECAST  -->
-      <div class="row">
-        <div class="col align-self-center text-start text-muted">
-          <i class="fa-solid fa-wind"></i>
-          <strong>{{ weather.wind_speed_kh }} <small>km/h</small></strong>
-          <br>
-          <i class="fa-regular fa-compass"></i>
-          <strong>{{ weather.wind_diraction }}</strong>
-          <br>
-          <i class="fa-solid fa-droplet"></i>
-          <strong>{{ weather.humidity }} <small>%</small></strong>
-        </div>
-        <div class="col text-end text-muted">
-          <small>feels like:</small>
-          <strong class="mt-0">{{ weather.feel_temp }} C°</strong>
-          <br>
-          <small>min temp:</small>
-          <strong class="mt-0">{{ weather.min_temp }} C°</strong>
-          <br>
-          <small>max temp:</small>
-          <strong class="mt-0">{{ weather.max_temp }} C°</strong>
-
-        </div>
-      </div>
-
     </div>
   </div>
 </div>
-
 {% endblock content %}

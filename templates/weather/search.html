@@ -8,30 +8,45 @@
 {% block content %}
 <h3>{{ city_name }}</h3>
 {% for city in cities %}
-  <div class="card mb-1">
-    <div class="card-body pt-0 pb-0 pe-0">
-      <div class="row">
-        <div class="col text-start align-self-center">
-          <a href="{% url 'weather:city_follow' city.city city.id %}" class="text-warning text-decoration-none">
-            {% if user|follow_city:city.id %}
-            <i class="fa-solid fa-star"></i>
-            {% else %}
-            <i class="fa-regular fa-star"></i>
-            {% endif %}
-          </a>
-          <a href="{% url 'weather:weather_detail' city.id %}" class="text-decoration-none text-muted">
-            {{ city.city }}
-          </a>
-        </div>
-        <div class="col text-end align-self-center">
-          {{ city.temp }} C°
-          <img src="{{ city.icon_url }}" width="50" height="50">
-          <img src="https://ip-api.io/images/flags/{{ city.country|lower }}.svg" class="rounded-end" height="50">
-        </div>
+<div class="card mb-1">
+  <div class="card-body pt-0 pb-0 pe-0">
+    <div class="row">
+      <div class="col text-start align-self-center">
+        <a href="{% url 'weather:city_follow' %}?city_name={{ city.city.name }}&city_id={{ city.city_id }}&country_code={{ city.city.country_code }}"
+           class="text-warning text-decoration-none">
+          {% if user|follow_city:city.city.name %}
+          <i class="fa-solid fa-star"></i>
+          {% else %}
+          <i class="fa-regular fa-star"></i>
+          {% endif %}
+        </a>
+        <a href="{% url 'weather:weather_detail' city.city.name city.city.country_code %}" class="text-decoration-none text-muted">
+          {{ city.city.name }}
+        </a>
+      </div>
+      <div class="col text-end align-self-center">
+        {{ city.temperature.normal }} C°
+        <img src="{{ city.icon_url }}" width="50" height="50">
+        <img src="https://ip-api.io/images/flags/{{ city.city.country_code|lower }}.svg" class="rounded-end" height="50">
       </div>
     </div>
   </div>
+</div>
+{% endfor %}
+{% for city_name in not_found_cities %}
 
+<div class="card mb-1">
+  <div class="card-body pt-0 pb-0 pe-0">
+    <div class="row" style="height:50px">
+      <div class="col text-start align-self-center text-muted">
+        {{ city_name }}
+      </div>
+      <div class="col text-end align-self-center me-3 text-info">
+        Info about this city was not found
+      </div>
+    </div>
+  </div>
+</div>
 
 {% endfor %}
 {% endblock content %}

@@ -1,0 +1,2 @@
+class GoogleMapsApiError(BaseException):
+    pass
