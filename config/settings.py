@@ -50,7 +50,8 @@ INSTALLED_APPS = [
     # user apps
     'accounts.apps.AccountsConfig',
     'blog.apps.BlogConfig',
-    'weather.apps.WeatherConfig'
+    'weather.apps.WeatherConfig',
+    'movies.apps.MoviesConfig'
 ]
 
 MIDDLEWARE = [
@@ -136,8 +137,8 @@ DATETIME_FORMAT = 'd b Y - H:i:s'
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = 'static/'
-STATIC_ROOT = 'static/'
-#STATICFILES_DIRS = (BASE_DIR / 'static',)
+#STATIC_ROOT = 'static/'
+STATICFILES_DIRS = (BASE_DIR / 'static',)
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
@@ -162,3 +163,44 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+
+
+# Logging
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'file': {
+            'level': 'WARNING',
+            'class': 'logging.FileHandler',
+            'filename': 'app.log',
+            'formatter': 'verbose',
+        },
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file', 'console'],
+            'level': 'WARNING',
+            'propagate': True,
+        },
+        'weather': {
+            'handlers': ['file', 'console'],
+            'level': 'WARNING',
+        },
+    },
+}

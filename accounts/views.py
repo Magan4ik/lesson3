@@ -15,6 +15,12 @@ User = get_user_model()
 def has_profile(user: User) -> bool:
     return not hasattr(user, 'profile')
 
+def get_blured_email(email: str) -> str:
+    splited_email = email.split("@")
+    first_part = splited_email[0][:4]
+    domen_part = splited_email[1]
+    return f"{first_part}{'*' * (len(splited_email[0]) - 4)}@{domen_part}"
+
 
 @require_http_methods(["GET", "POST"])
 def login_view(request: HttpRequest) -> HttpResponse:
@@ -43,13 +49,13 @@ def login_view(request: HttpRequest) -> HttpResponse:
                 return redirect('accounts:test')
             else:
                 messages.error(request, 'Invalid email or password')
-                return render(request, 'accounts/login.html', {'form': form})
+                return render(request, 'accounts/login/login.html', {'form': form})
         else:
             messages.error(request, 'Invalid form data')
-            return render(request, 'accounts/login.html', {'form': form})
+            return render(request, 'accounts/login/login.html', {'form': form})
 
     form = forms.LoginForm()
-    return render(request, 'accounts/login.html', {'form': form})
+    return render(request, 'accounts/login/login.html', {'form': form})
 
 
 @login_required
@@ -77,10 +83,10 @@ def signup_view(request: HttpRequest) -> HttpResponse:
             send_activation_email(user)
             url = reverse("accounts:activate_token", args=[user.username])
             return redirect(url)
-        return render(request, 'accounts/signup.html', {'form': form})
+        return render(request, 'accounts/login/signup.html', {'form': form})
 
     form = forms.RegisterForm()
-    return render(request, 'accounts/signup.html', {'form': form})
+    return render(request, 'accounts/login/signup.html', {'form': form})
 
 @require_http_methods(["GET", "POST"])
 def activate_view(request: HttpRequest, username: str) -> HttpResponse:
@@ -88,10 +94,7 @@ def activate_view(request: HttpRequest, username: str) -> HttpResponse:
     if user.is_active:
         messages.info(request, "Account has already been verified")
         return redirect("accounts:test")
-    splited_email = user.email.split("@")
-    first_part = splited_email[0][:4]
-    domen_part = splited_email[1]
-    blured_email = f"{first_part}{'*'*(len(splited_email[0])-4)}@{domen_part}"
+    blured_email = get_blured_email(user.email)
     if request.method == "POST":
         if request.POST.get("token", "") == user.register_token:
             user.is_active = True
@@ -103,9 +106,9 @@ def activate_view(request: HttpRequest, username: str) -> HttpResponse:
             messages.error(request, f"The token does not match. A new token has been sent to you at {blured_email}")
             send_activation_email(user)
 
-            return render(request, "accounts/token.html", {"blured_email": blured_email})
+            return render(request, "accounts/login/token.html", {"blured_email": blured_email})
 
-    return render(request, "accounts/token.html", {"blured_email": blured_email})
+    return render(request, "accounts/login/token.html", {"blured_email": blured_email})
 
 @login_required
 @user_passes_test(has_profile, login_url="accounts:test")
@@ -118,9 +121,9 @@ def create_profile_view(request: HttpRequest) -> HttpResponse:
             profile.user = request.user
             profile.save()
             return redirect("accounts:test")
-        return render(request, "accounts/create_profile.html", {"form": form})
+        return render(request, "accounts/profile/create_profile.html", {"form": form})
     form = forms.ProfileForm()
-    return render(request, "accounts/create_profile.html", {"form": form})
+    return render(request, "accounts/profile/create_profile.html", {"form": form})
 
 
 @login_required
@@ -128,7 +131,7 @@ def profile_view(request: HttpRequest, username: str) -> HttpResponse:
     user = get_object_or_404(User, username=username)
     if not (profile := models.Profile.objects.filter(user=user)).exists():
         return redirect("accounts:create_profile")
-    return render(request, "accounts/profile.html", {"profile": profile[0]})
+    return render(request, "accounts/profile/profile.html", {"profile": profile[0]})
 
 
 @login_required
@@ -137,7 +140,6 @@ def follow_view(request: HttpRequest, username: str) -> HttpResponse:
     follow, created = models.Follow.objects.get_or_create(author=request.user, user=user)
     if not created:
         follow.delete()
-    url = reverse("accounts:profile", args=[username])
     return redirect("accounts:profile", username=username)
 
 @login_required
@@ -153,13 +155,13 @@ def edit_profile_view(request: HttpRequest, username: str) -> HttpResponse:
                 messages.success(request, "The profile has been successfully updated")
                 return redirect("accounts:profile", username=username)
             else:
-                return render(request, "accounts/edit_profile.html", {'form': form, "username": username})
+                return render(request, "accounts/profile/edit_profile.html", {'form': form, "username": username})
     else:
         messages.warning(request, "You don't have permission to edit this profile.")
         return redirect("accounts:profile", username=username)
 
     form = forms.ProfileForm(instance=profile)
-    return render(request, "accounts/edit_profile.html", {"form": form, "username": username})
+    return render(request, "accounts/profile/edit_profile.html", {"form": form, "username": username})
 
 @login_required
 @require_http_methods(["GET", "POST"])
@@ -174,17 +176,49 @@ def change_password_view(request: HttpRequest, username: str) -> HttpResponse:
             messages.success(request, "Your password has been successfully changed")
             return redirect("accounts:profile", username=username)
         else:
-            return render(request, "accounts/change_password.html", {'form': form})
+            return render(request, "accounts/profile/change_password.html", {'form': form})
 
     form = forms.PasswordChangeForm(request.user)
-    return render(request, "accounts/change_password.html", {"form": form})
+    return render(request, "accounts/profile/change_password.html", {"form": form})
 
-@require_http_methods(["GET","POST"])
-def verify_email_view(request: HttpRequest) -> HttpResponse:
+@require_http_methods(["GET", "POST"])
+def send_email_view(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         user = get_object_or_404(User, email=request.POST.get("email"))
         user.is_active = False
         user.save()
         send_activation_email(user)
-        return redirect("accounts:activate_token")
-    return render(request, "accounts/verify_email.html")
+        return redirect("accounts:verify_email", username=user.username)
+    return render(request, "accounts/profile/verify_email.html")
+
+@require_http_methods(["GET", "POST"])
+def verify_email_view(request: HttpRequest, username: str) -> HttpResponse:
+    user = get_object_or_404(User, username=username)
+    blured_email = get_blured_email(user.email)
+    if request.method == "POST":
+        if request.POST.get("token", "") == user.register_token:
+            user.is_active = True
+            user.save()
+
+            return redirect("accounts:set_password", username=username)
+        else:
+            messages.error(request, f"The token does not match. A new token has been sent to you at {blured_email}")
+            send_activation_email(user)
+            return render(request, "accounts/login/token.html", {"blured_email": blured_email})
+
+    return render(request, "accounts/login/token.html", {"blured_email": blured_email})
+
+@require_http_methods(["GET", "POST"])
+def set_password_view(request: HttpRequest, username: str) -> HttpResponse:
+    user = get_object_or_404(User, username=username)
+    form = forms.SetPasswordForm(user)
+    if request.method == "POST":
+        form = forms.SetPasswordForm(user=user, data=request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            return redirect("blog:post_list")
+        else:
+            return render(request, "accounts/profile/set_password.html", {"form": form})
+
+    return render(request, "accounts/profile/set_password.html", {"form": form})
